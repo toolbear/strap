@@ -3,6 +3,7 @@
 /.vagrant/
 /bin/*
 !/bin/strap.sh
+!/bin/set-hostname
 /vendor/
 Vagrantfile
 strap.sh

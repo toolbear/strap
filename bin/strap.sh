@@ -73,6 +73,53 @@ escape() {
   printf '%s' "${1//\'/\'}"
 }
 
+# Set doozerish hostname, e.g. resolute-tumbrel-6808
+function set-doozerish-hostname() {
+  local hostname; hostname=$1
+  [ -n "$hostname" ]
+
+  case "$hostname" in
+    "$(hostname -s)")
+      log "Hostname is \`$hostname'. No change."
+      logk
+      ;;
+
+    *)
+      sudo -k
+      sudo -p "Setting hostname to \`$hostname'. Password: " /usr/bin/true
+      sudo scutil --set LocalHostName $hostname
+      sudo scutil --set HostName $hostname.local
+      sudo scutil --set ComputerName $hostname
+      ;;
+  esac
+}
+
+ruby <<"EORUBY" | ( read hostname; set-doozerish-hostname "$hostname" )
+adjectives = %w[active analytical animated bouncy busy careful cautious cheerful
+                clever confident dedicated devoted diligent dogmatic dynamic eager
+                ebullient elaborate enthusiastic exacting fast fastidious fierce fussy
+                hale industrious intense jolly keen levelheaded logical methodical
+                meticulous pedantic peppy perky persevering powerful proud prudent
+                punctual rational resolute rigorous robust serious spry steadfast
+                steady strong sturdy tenacious thorough tiny tireless unflagging
+                upbeat vibrant vigorous vivacious wise woofy zealous zestful]
+nouns      = %w[architect axle bailiff beam blade board bolt caliper
+                camshaft cantilever cart clamp cogwheel cotterpin crane crankshaft
+                crosscut crusty derrick doodad drillbit driver flange flex
+                forklift gadget gavel hammer hammerhead jigsaw lever lock
+                lugnut miter modem molly pickaxe piledriver pipewrench protractor
+                pulley puttyknife ratchet rhinestone rotary sandpaper saw scoop
+                screw sledgehammer socket socketwrench spike square thingamabob toggle
+                torch treadmill trowel tumbrel turbo tweezer wingnut wrench]
+
+mac = `/sbin/ifconfig -l`.split(/ /).grep(/en0|en1/).sort.map { |interface|
+  `/sbin/ifconfig #{interface} link`.lines.grep(/ether ((?:[0-9A-Fa-f]{2}:){5}(?:[0-9A-Fa-f]{2}))\s/){$1}.first
+}.find {|mac| mac}
+srand mac.gsub(/:/,'').hex
+puts "#{adjectives[rand 64]}-#{nouns[rand 64]}-#{rand(10_000-1_000)+1_000}"
+EORUBY
+hostname=$(hostname -s)
+
 MACOS_VERSION="$(sw_vers -productVersion)"
 echo "$MACOS_VERSION" | grep $Q -E "^10.(9|10|11|12|13|14)" || {
   abort "Run Strap on macOS 10.9/10/11/12/13/14."
